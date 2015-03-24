@@ -29,5 +29,6 @@ enum ue_msg_header {
 
 int send_modem(wchar_t *sendbuf, int size);
 int pipe_create_host();
+void * pipe_client_recv(void *id);
 
 #endif /* UE_MSG_TYPES_H_ */
