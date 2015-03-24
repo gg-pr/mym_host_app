@@ -45,13 +45,10 @@ int host_write_to_pipe(int msg_id, const wchar_t *data, HANDLE pipe)
 
 int host_create_pipe(HANDLE *pipe)
 {
-
-   // while (1) {
-
-        wcout << "Creating an instance of a named pipe..." << endl;
+    wcout << "Creating an instance of a named pipe..." << endl;
      
         // Create a pipe to send data
-         *pipe = CreateNamedPipe(
+     *pipe = CreateNamedPipe(
             L"\\\\.\\pipe\\my_pipe", // name of the pipe
             PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
             PIPE_TYPE_BYTE, // send data as a byte stream

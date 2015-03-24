@@ -110,14 +110,14 @@ void * client_recv(void *id)
 */
     //while ((n = read(client_sockfd, recvBuff, sizeof(recvBuff)-1)) > 0) {
 	while ((n = recv(client_sockfd, recvBuff, (sizeof(recvBuff)-1), 0)) > 0) {
-        f = fopen("testrxd.enc", "wb");
+  //      f = fopen("testrxd.enc", "wb");
 
-        fwrite(recvBuff, n, 1, f);
-        fclose(f);
+    //    fwrite(recvBuff, n, 1, f);
+     //   fclose(f);
 
-        (void)system("openssl aes-256-cbc -d -a -in testrxd.enc -out testrxd.json -pass pass:\"helloamar\"");
+//        (void)system("openssl aes-256-cbc -d -a -in testrxd.enc -out testrxd.json -pass pass:\"helloamar\"");
 
-        f = fopen("testrxd.json", "rb");
+    /*    f = fopen("testrxd.json", "rb");
         fseek(f, 0, SEEK_END);
         fsize = ftell(f);
         fseek(f, 0, SEEK_SET);
@@ -127,7 +127,7 @@ void * client_recv(void *id)
         //parse_json(parseBuff);
 
         fclose(f);
-
+*/
     }
 
     if(n < 0) {
@@ -172,7 +172,7 @@ int main (int argc, char *argv[])
 
 	while (1) {
 
-		(void)system("openssl aes-256-cbc -a -in test.json -out test.enc -pass pass:\"helloamar\"");
+//		(void)system("openssl aes-256-cbc -a -in test.json -out test.enc -pass pass:\"helloamar\"");
 
 		f = fopen("test.enc", "rb");
 		fseek(f, 0, SEEK_END);
