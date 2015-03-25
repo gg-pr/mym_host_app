@@ -7,7 +7,7 @@ using namespace std;
  
 //int main(int argc, const char **argv)
 
-int host_write_to_pipe(int msg_id, const wchar_t *data, HANDLE pipe)
+int host_write_to_pipe(int msg_id, wchar_t *data, HANDLE pipe)
 {
     wcout << "Waiting for a client to connect to the pipe..." << endl;
      

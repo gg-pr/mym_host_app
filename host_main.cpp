@@ -24,13 +24,15 @@
 #include "ue_msg_types.h"
 */
 #include <pthread.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <iostream>
 //#include <tchar.h>
 #include <windows.h>
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
+#include <unistd.h>
+#include "ue_msg_types.h"
 
 using namespace std;
 
@@ -39,11 +41,22 @@ using namespace std;
 #define   FALSE 0
 //#define   NULL 0
 
+/*
+#ifdef _WIN32
+#if !defined(_WIN64) && !defined(__MINGW64_VERSION_MAJOR)
+struct timespec {
+    int tv_sec;
+    long tv_nsec;
+};
+#endif
+#endif
+*/
+
 static int conn_exist = TRUE;
 int client_sockfd;
 int connfd;
 FILE *f;
-
+HANDLE host_pipe;
 
 /*
  * This function is called by GUI module when user/admin
@@ -85,6 +98,10 @@ void * client_recv(void *id)
     int n = 0;
     char recvBuff[1024], parseBuff[1024];
     long fsize;
+    wchar_t recv_data[1024];
+    size_t orig_size=0;
+	size_t converted_char_len=0;
+
 
     memset(recvBuff, '0', sizeof(recvBuff));
 
@@ -135,6 +152,10 @@ void * client_recv(void *id)
 		cout<<"Read error";
     }
 
+    /*We have now received the buffer, send it to Named pipe connecting GUI */ 
+    mbstowcs_s(&converted_char_len, recv_data, orig_size, recvBuff, _TRUNCATE);
+
+	host_write_to_pipe(0,static_cast (wchar_t )recv_data,host_pipe);
     return NULL;
 }
 
@@ -154,6 +175,12 @@ int main (int argc, char *argv[])
     pthread_t recv_tid;
     pthread_attr_t attr;
     int *params[2];
+	payload *p= NULL;
+
+	/*
+     * Create named pipe towards GUI application
+     */
+	host_create_pipe(&host_pipe);
 
 	/*
 	 * Start the state machine for this Modem interface
@@ -170,6 +197,19 @@ int main (int argc, char *argv[])
 		cout<<"\nreceive thread creation failed on host";
 	}
 
+	int temp = 100;
+	p = new payload;
+	p->msg = new msg_t;
+    p->bulk_msg_count = 1;
+    p->msg->msg_id = UE_MODEM_INIT_MSG;
+	p->msg->msg_len = 4;
+	p->msg->data = new int;
+	//p->msg->data) = 100;
+	p->msg->data = &temp;
+	p->msg->next = NULL;
+
+	host_write_to_pipe(0, reinterpret_cast (wchar_t *) p, host_pipe);
+	
 	while (1) {
 
 //		(void)system("openssl aes-256-cbc -a -in test.json -out test.enc -pass pass:\"helloamar\"");
@@ -178,7 +218,7 @@ int main (int argc, char *argv[])
 		fseek(f, 0, SEEK_END);
 		fsize = ftell(f);
 		fseek(f, 0, SEEK_SET);
-		//sendBuff = calloc((fsize + 1),1);
+		
         sendBuff = new char[fsize+1];
 
 		if (sendBuff == NULL) {
