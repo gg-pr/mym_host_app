@@ -31,7 +31,7 @@
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include "ue_msg_types.h"
 
 using namespace std;
@@ -127,14 +127,15 @@ void * client_recv(void *id)
 */
     //while ((n = read(client_sockfd, recvBuff, sizeof(recvBuff)-1)) > 0) {
 	while ((n = recv(client_sockfd, recvBuff, (sizeof(recvBuff)-1), 0)) > 0) {
-  //      f = fopen("testrxd.enc", "wb");
+        f = fopen("testrxd.txt", "wb");
 
-    //    fwrite(recvBuff, n, 1, f);
-     //   fclose(f);
+        fwrite(recvBuff, n, 1, f);
+        fclose(f);
 
 //        (void)system("openssl aes-256-cbc -d -a -in testrxd.enc -out testrxd.json -pass pass:\"helloamar\"");
 
-    /*    f = fopen("testrxd.json", "rb");
+    //    f = fopen("testrxd.json", "rb");
+		f = fopen("testrxd.txt", "rb");
         fseek(f, 0, SEEK_END);
         fsize = ftell(f);
         fseek(f, 0, SEEK_SET);
@@ -144,7 +145,7 @@ void * client_recv(void *id)
         //parse_json(parseBuff);
 
         fclose(f);
-*/
+
     }
 
     if(n < 0) {
@@ -153,9 +154,9 @@ void * client_recv(void *id)
     }
 
     /*We have now received the buffer, send it to Named pipe connecting GUI */ 
-    mbstowcs_s(&converted_char_len, recv_data, orig_size, recvBuff, _TRUNCATE);
+    //mbstowcs_s(&converted_char_len, recv_data, orig_size, recvBuff, _TRUNCATE);
 
-	host_write_to_pipe(0,static_cast (wchar_t )recv_data,host_pipe);
+	host_write_to_pipe(0, parseBuff, host_pipe);
     return NULL;
 }
 
@@ -172,7 +173,7 @@ int main (int argc, char *argv[])
 
 //	time_t ticks;
 	long fsize;
-    pthread_t recv_tid;
+    pthread_t recv_tid, recv_pipe_tid;
     pthread_attr_t attr;
     int *params[2];
 	payload *p= NULL;
@@ -180,8 +181,9 @@ int main (int argc, char *argv[])
 	/*
      * Create named pipe towards GUI application
      */
-	host_create_pipe(&host_pipe);
+	//host_create_pipe(&host_pipe);
 
+	//pipe_create_host();
 	/*
 	 * Start the state machine for this Modem interface
 	 *
@@ -192,10 +194,15 @@ int main (int argc, char *argv[])
         cout<<"\nAttr init failed on host";
     }
 
-	ret_val = pthread_create(&recv_tid, 0, client_recv, params[0]);
+	/*ret_val = pthread_create(&recv_tid, 0, client_recv, params[0]);
 	if(ret_val != 0){
 		cout<<"\nreceive thread creation failed on host";
-	}
+	}*/
+
+	ret_val = pthread_create(&recv_pipe_tid, 0, pipe_client_recv, params[1]);
+    if(ret_val != 0){
+        cout<<"\nNamed Pipe receive thread creation failed on host";
+    }
 
 	int temp = 100;
 	p = new payload;
@@ -208,9 +215,13 @@ int main (int argc, char *argv[])
 	p->msg->data = &temp;
 	p->msg->next = NULL;
 
-	host_write_to_pipe(0, reinterpret_cast (wchar_t *) p, host_pipe);
-	
-	while (1) {
+	//host_write_to_pipe(0, (char *) p, host_pipe);
+
+	Sleep(60);
+	while (1)
+	{
+	}
+//	while (1) {
 
 //		(void)system("openssl aes-256-cbc -a -in test.json -out test.enc -pass pass:\"helloamar\"");
 
@@ -244,6 +255,6 @@ int main (int argc, char *argv[])
         //write(accept_sock, sendBuff, fsize);
 
 		//sleep(1);
-	}
+//	}
 }
 

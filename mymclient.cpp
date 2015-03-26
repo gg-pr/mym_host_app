@@ -130,29 +130,58 @@ int pipe_close_host()
 
 void * pipe_client_recv(void *id)
 {
-    cout << "Reading data from pipe...\n";
+	//Sleep(100);
+	cout << "Connecting to pipe yodha from client thread..." << endl;
+
+	WaitNamedPipe(L"\\\\.\\pipe\\yodha", 0xffffffff);
+ 
      
+	 HANDLE pipe_local = CreateFile(
+            L"\\\\.\\pipe\\yodha",
+            GENERIC_READ, // only need read access
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+     
+        if (pipe_local == INVALID_HANDLE_VALUE) {
+            cout << "Failed to connect to pipe from GUI." << endl;
+            // look up error code here using GetLastError()
+            system("pause");
+            return NULL;
+        }
+ Sleep(10);
+ while (1) {
     // The read operation will block until there is data to read
-    wchar_t buffer[128];
+    //wchar_t buffer[128];
+	char buffer[128];
     DWORD numBytesRead = 0;
+	   cout << "Reading data from pipe...\n";
     BOOL result = ReadFile(
-                           pipe,
+                           pipe_local,
                            buffer, // the data from the pipe will be put here
-                           127 * sizeof(wchar_t), // number of bytes allocated
+                           127, // number of bytes allocated
                            &numBytesRead, // this will store number of bytes actually read
                            NULL // not using overlapped IO          
                    );
      
     if (result) {
-        int size = (numBytesRead / sizeof(wchar_t)) + 1;
-        buffer[numBytesRead / sizeof(wchar_t)] = '\0'; // null terminate the string
-        wcout << "Number of bytes read: " << numBytesRead << endl;
-        wcout << "Message: " << buffer << endl;
+		cout<<"data read successfully"<<endl;
+        //int size = (numBytesRead / sizeof(wchar_t)) + 1;
+		int size = numBytesRead;
+        //buffer[numBytesRead / sizeof(wchar_t)] = '\0'; // null terminate the string
+		buffer[numBytesRead] = '\0'; // null terminate the string
+        cout << "Number of bytes read: " << numBytesRead << endl;
+        cout << "Message: " << buffer << endl;
         cout<<"size of data passed = %d\n"<<size;
-        send_modem(buffer, size);
+		system("pause");
+        //send_modem(buffer, size);
     } else {
             wcout << "Failed to read data from the pipe." << endl;
     }
+ }
 }
 
 int pipe_create_bw_thread()

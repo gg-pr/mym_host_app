@@ -43,7 +43,7 @@ typedef struct payload_t {
 int send_modem(wchar_t *sendbuf, int size);
 int host_create_pipe(HANDLE *pipe);
 void * pipe_client_recv(void *id);
-int host_write_to_pipe(int msg_id, wchar_t *data, HANDLE pipe);
+int host_write_to_pipe(int msg_id, char *data, HANDLE pipe);
 
 
 #endif /* UE_MSG_TYPES_H_ */

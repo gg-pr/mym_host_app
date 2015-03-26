@@ -7,7 +7,7 @@ using namespace std;
  
 //int main(int argc, const char **argv)
 
-int host_write_to_pipe(int msg_id, wchar_t *data, HANDLE pipe)
+int host_write_to_pipe(int msg_id, char *data, HANDLE pipe)
 {
     wcout << "Waiting for a client to connect to the pipe..." << endl;
      
@@ -29,7 +29,8 @@ int host_write_to_pipe(int msg_id, wchar_t *data, HANDLE pipe)
     result = WriteFile(
                        pipe, // handle to our outbound pipe
                        data, // data to send
-                       wcslen(data) * sizeof(wchar_t), // length of data to send (bytes)
+                       //wcslen(data) * sizeof(wchar_t), // length of data to send (bytes)
+                       strlen(data),
                        &numBytesWritten, // will store actual amount of data sent
                        NULL // not using overlapped IO
              );
