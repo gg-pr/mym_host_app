@@ -5,23 +5,25 @@
 #include <windows.h>
 using namespace std;
  
+HANDLE pipe;
 //int main(int argc, const char **argv)
 
-int host_write_to_pipe(int msg_id, char *data, HANDLE pipe)
+//int host_write_to_pipe(int msg_id, char *data, HANDLE pipe)
+int host_write_to_pipe(int msg_id, char *data)
 {
-    wcout << "Waiting for a client to connect to the pipe..." << endl;
+    cout << "Waiting for a client to connect to the pipe..." << endl;
      
     // This call blocks until a client process connects to the pipe
     BOOL result = ConnectNamedPipe(pipe, NULL);
     if (!result) {
-        wcout << "Failed to make connection on named pipe." << endl;
+        cout << "Failed to make connection on named pipe." << endl;
         // look up error code here using GetLastError()
-        CloseHandle(pipe); // close the pipe
+        //CloseHandle(pipe); // close the pipe
         system("pause");
         return 1;
     }
 
-    wcout << "Sending data to pipe..." << endl;
+    cout << "Sending data to pipe..." << endl;
      
     // This call blocks until a client process reads all the data
     //const wchar_t *data = L"*** Hello Pipe World ***";
@@ -36,22 +38,26 @@ int host_write_to_pipe(int msg_id, char *data, HANDLE pipe)
              );
      
     if (result) {
-        wcout << "Number of bytes sent: " << numBytesWritten << endl;
+        cout << "Number of bytes sent: " << numBytesWritten << endl;
     } else {
-        wcout << "Failed to send data." << endl;
+        cout << "Failed to send data." << endl;
             // look up error code here using GetLastError()
     }
         // Close the pipe (automatically disconnects client too)
 }
 
-int host_create_pipe(HANDLE *pipe)
+//int host_create_pipe(HANDLE *pipe)
+int host_create_pipe()
 {
-    wcout << "Creating an instance of a named pipe..." << endl;
+	
+    cout << "Creating an instance of a named pipe..." << endl;
      
         // Create a pipe to send data
-     *pipe = CreateNamedPipe(
-            L"\\\\.\\pipe\\my_pipe", // name of the pipe
-            PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
+     pipe = CreateNamedPipe(
+            //L"\\\\.\\pipe\\my_pipe", // name of the pipe
+			L"\\\\.\\pipe\\mypipe",
+			PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
+			//PIPE_ACCESS_DUPLEX,
             PIPE_TYPE_BYTE, // send data as a byte stream
             1, // only allow 1 instance of this pipe
             0, // no outbound buffer
@@ -60,8 +66,8 @@ int host_create_pipe(HANDLE *pipe)
             NULL // use default security attributes
         );
      
-        if (*pipe == NULL || *pipe == INVALID_HANDLE_VALUE) {
-            wcout << "Failed to create outbound pipe instance.";
+        if (pipe == NULL || pipe == INVALID_HANDLE_VALUE) {
+            cout << "Failed to create outbound pipe instance.";
             // look up error code here using GetLastError()
             system("pause");
             return 1;
@@ -105,7 +111,7 @@ int host_create_pipe(HANDLE *pipe)
  //   }
  */
  
-    wcout << "Pipe create Done." << endl;
+    cout << "Pipe create Done." << endl;
  
    // system("pause");
     return 0;

@@ -41,22 +41,16 @@ using namespace std;
 #define   FALSE 0
 //#define   NULL 0
 
-/*
-#ifdef _WIN32
-#if !defined(_WIN64) && !defined(__MINGW64_VERSION_MAJOR)
-struct timespec {
-    int tv_sec;
-    long tv_nsec;
-};
-#endif
-#endif
-*/
-
 static int conn_exist = TRUE;
 int client_sockfd;
 int connfd;
 FILE *f;
 HANDLE host_pipe;
+
+int host_get_pipe_handle(HANDLE *pipe)
+{
+    *pipe = host_pipe;
+}
 
 /*
  * This function is called by GUI module when user/admin
@@ -156,7 +150,8 @@ void * client_recv(void *id)
     /*We have now received the buffer, send it to Named pipe connecting GUI */ 
     //mbstowcs_s(&converted_char_len, recv_data, orig_size, recvBuff, _TRUNCATE);
 
-	host_write_to_pipe(0, parseBuff, host_pipe);
+	//host_write_to_pipe(0, parseBuff, host_pipe);
+	host_write_to_pipe(0, parseBuff);
     return NULL;
 }
 
@@ -182,7 +177,7 @@ int main (int argc, char *argv[])
      * Create named pipe towards GUI application
      */
 	//host_create_pipe(&host_pipe);
-
+    host_create_pipe();
 	//pipe_create_host();
 	/*
 	 * Start the state machine for this Modem interface
@@ -203,17 +198,6 @@ int main (int argc, char *argv[])
     if(ret_val != 0){
         cout<<"\nNamed Pipe receive thread creation failed on host";
     }
-
-	int temp = 100;
-	p = new payload;
-	p->msg = new msg_t;
-    p->bulk_msg_count = 1;
-    p->msg->msg_id = UE_MODEM_INIT_MSG;
-	p->msg->msg_len = 4;
-	p->msg->data = new int;
-	//p->msg->data) = 100;
-	p->msg->data = &temp;
-	p->msg->next = NULL;
 
 	//host_write_to_pipe(0, (char *) p, host_pipe);
 

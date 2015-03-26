@@ -22,7 +22,7 @@ using namespace std;
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "5000"
 
-HANDLE pipe;
+HANDLE pipe_client;
 
 int send_modem(wchar_t *sendbuf, int size)
 {
@@ -123,13 +123,15 @@ int send_modem(wchar_t *sendbuf, int size)
 
 }
  
+/*
 int pipe_close_host()
 {
-    CloseHandle(pipe);
+    CloseHandle(pipe_local);
 }
-
+*/
 void * pipe_client_recv(void *id)
 {
+	HANDLE pipe_to_gui;
 	//Sleep(100);
 	cout << "Connecting to pipe yodha from client thread..." << endl;
 
@@ -176,6 +178,10 @@ void * pipe_client_recv(void *id)
         cout << "Number of bytes read: " << numBytesRead << endl;
         cout << "Message: " << buffer << endl;
         cout<<"size of data passed = %d\n"<<size;
+
+		//host_get_pipe_handle(&pipe_to_gui);
+        //host_write_to_pipe(0, buffer, pipe_to_gui);
+		host_write_to_pipe(0, buffer);
 		system("pause");
         //send_modem(buffer, size);
     } else {
@@ -184,6 +190,7 @@ void * pipe_client_recv(void *id)
  }
 }
 
+/*
 int pipe_create_bw_thread()
 {
     cout<<"Connecting to pipe...\n" ;
@@ -210,13 +217,14 @@ int pipe_create_bw_thread()
     return 0;
 }
 
+*/
 //int main(int argc, const char **argv)
 int pipe_create_host()
 {   
     cout<<"Connecting to pipe...\n" ;
         
     WaitNamedPipe(L"\\\\.\\pipe\\yodha", 0xffffffff);
-    pipe = CreateFile(
+    pipe_client = CreateFile(
             L"\\\\.\\pipe\\yodha",
             GENERIC_READ, // only need read access
             FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -226,7 +234,7 @@ int pipe_create_host()
             NULL
         );
      
-        if (pipe == INVALID_HANDLE_VALUE) {
+        if (pipe_client == INVALID_HANDLE_VALUE) {
             cout << "Failed to connect to pipe.\n";
             // look up error code here using GetLastError()
             system("pause");
