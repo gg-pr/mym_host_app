@@ -19,6 +19,9 @@
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 
+#define RET_SUCCESS  0
+#define RET_FAILURE  1
+
 typedef enum ue_msg_header {
     UE_MODEM_INIT_MSG = 1,
     UE_GET_MODEM_INFO,
@@ -47,5 +50,6 @@ void * pipe_client_recv(void *id);
 //int host_write_to_pipe(int msg_id, char *data, HANDLE pipe);
 int host_write_to_pipe(int msg_id, char *data);
 int host_get_pipe_handle(HANDLE *pipe);
+int ue_send_modem_init();
 
 #endif /* UE_MSG_TYPES_H_ */

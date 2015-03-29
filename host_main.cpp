@@ -87,9 +87,10 @@ int open_socket()
     return 0;
 }
 
-void * client_recv(void *id)
+void * ue_recv_modem_data(void *id)
 {
     int n = 0;
+    int retCode = RET_SUCCESS;;
     char recvBuff[1024], parseBuff[1024];
     long fsize;
     wchar_t recv_data[1024];
@@ -99,6 +100,13 @@ void * client_recv(void *id)
 
     memset(recvBuff, '0', sizeof(recvBuff));
 
+    cout<<"Receive modem data thread created"<<endl;
+    retCode = ue_send_modem_init();
+    
+/*	if (retCode  != RET_SUCCESS) {
+        cout<<"Socket init towards UE modem failed with error rc=%d";
+        return NULL;
+	}*/
     /*if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		printf ("\n Error: Could not create socket\n");
 		return 1;
@@ -144,7 +152,7 @@ void * client_recv(void *id)
 
     if(n < 0) {
         //printf("\n Read error \n");
-		cout<<"Read error";
+		cout << "Read error"<<endl;
     }
 
     /*We have now received the buffer, send it to Named pipe connecting GUI */ 
@@ -172,12 +180,17 @@ int main (int argc, char *argv[])
     pthread_attr_t attr;
     int *params[2];
 	payload *p= NULL;
+    int retCode = RET_SUCCESS;
 
 	/*
      * Create named pipe towards GUI application
      */
 	//host_create_pipe(&host_pipe);
-    host_create_pipe();
+   
+   /*Disable this call for now*/
+   // host_create_pipe();
+
+    
 	//pipe_create_host();
 	/*
 	 * Start the state machine for this Modem interface
@@ -186,19 +199,24 @@ int main (int argc, char *argv[])
 
     ret_val = pthread_attr_init(&attr);
     if(ret_val != 0){
-        cout<<"\nAttr init failed on host";
+        cout<<"Attr init failed on host";
     }
 
-	/*ret_val = pthread_create(&recv_tid, 0, client_recv, params[0]);
-	if(ret_val != 0){
-		cout<<"\nreceive thread creation failed on host";
-	}*/
-
-	ret_val = pthread_create(&recv_pipe_tid, 0, pipe_client_recv, params[1]);
+    /*ret_val = pthread_create(&recv_pipe_tid, 0, pipe_client_recv, params[1]);
     if(ret_val != 0){
-        cout<<"\nNamed Pipe receive thread creation failed on host";
+        cout<<"receive thread creation for receiving data from GUI failed"<<endl;
+    } */
+
+    cout<<"Initializing modem interface"<<endl;
+     //retCode = ue_send_modem_init();
+     
+     cout<<"Opened socket to configure modem "<<endl;
+    ret_val = pthread_create(&recv_tid, 0, ue_recv_modem_data, params[0]);
+    if(ret_val != 0){
+        cout<<"\nreceive thread creation for receiving modem data failed"<<endl;
     }
 
+   
 	//host_write_to_pipe(0, (char *) p, host_pipe);
 
 	Sleep(60);
@@ -217,12 +235,12 @@ int main (int argc, char *argv[])
         sendBuff = new char[fsize+1];
 
 		if (sendBuff == NULL) {
-			cout<<"\n Error mallocing for json data\n";
+			cout<<"Error mallocing for json data";
 			return -1;
 		}
 		//memset(sendBuff, '0', sizeof(sendBuff));
 
-		connfd = accept(client_sockfd, (struct sockaddr*)NULL, NULL);
+		//connfd = accept(client_sockfd, (struct sockaddr*)NULL, NULL);
         /*accept_sock = accept(sock,NULL, NULL);
         if (accept_sock == INVALID_SOCKET) {
             printf("\nAccept function failed with the error");

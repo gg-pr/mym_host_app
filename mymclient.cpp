@@ -23,13 +23,101 @@ using namespace std;
 #define DEFAULT_PORT "5000"
 
 HANDLE pipe_client;
+SOCKET ListenSocket = INVALID_SOCKET;
+SOCKET ClientSocket = INVALID_SOCKET;
 
-int send_modem(wchar_t *sendbuf, int size)
+int ue_send_modem_init()
 {
     WSADATA wsaData;
     int iResult;
+    FILE *f;
+    int fsize = 0;
+    int retCode = RET_SUCCESS;
 
-    SOCKET ListenSocket = INVALID_SOCKET;
+    struct addrinfo *result = NULL;
+    struct addrinfo hints;
+
+    int iSendResult;
+    char recvbuf[DEFAULT_BUFLEN];
+    int recvbuflen = DEFAULT_BUFLEN;
+    
+    cout<<"entered modem init code"<<endl;
+    
+    // Initialize Winsock
+    iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+    if (iResult != 0) {
+        cout<<"WSAStartup failed with error: "<< iResult<<endl;
+        return 1;
+    }
+
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = AI_PASSIVE;
+
+    // Resolve the server address and port
+    iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+    if ( iResult != 0 ) {
+        cout<<"getaddrinfo failed with error:"<< iResult<<endl;
+        WSACleanup();
+        return 1;
+    }
+
+    cout<<"getaddrinfo done, iResult:"<<iResult<<endl;
+    // Create a SOCKET for connecting to server
+    ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (ListenSocket == INVALID_SOCKET) {
+        cout<<"socket failed with error: "<< WSAGetLastError()<<endl;
+        freeaddrinfo(result);
+        WSACleanup();
+        return 1;
+    }
+
+    cout<<"socket call returned ListenSocket:"<< ListenSocket <<endl;
+    // Setup the TCP listening socket
+    iResult = bind( ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+    if (iResult == SOCKET_ERROR) {
+        cout<<"bind failed with error: "<< WSAGetLastError() <<endl;
+        freeaddrinfo(result);
+        closesocket(ListenSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout<<"bind call returned iResult:"<<iResult<<endl;
+    freeaddrinfo(result);
+
+    iResult = listen(ListenSocket, SOMAXCONN);
+    if (iResult == SOCKET_ERROR) {
+        cout<<"listen failed with error: "<< WSAGetLastError()<<endl;
+        closesocket(ListenSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout<<"listen call returned:"<<iResult<<endl;
+    // Accept a client socket
+    ClientSocket = accept(ListenSocket, NULL, NULL);
+    if (ClientSocket == INVALID_SOCKET) {
+        cout<<"accept failed with error: "<<WSAGetLastError()<<endl;
+        closesocket(ListenSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout<<"Connection accepted"<<endl;
+    return 0;
+}
+
+int ue_send_modem(char *sendbuf, int size)
+{
+    WSADATA wsaData;
+    int iResult;
+    FILE *f;
+    int fsize = 0;
+
+   /* SOCKET ListenSocket = INVALID_SOCKET;
     SOCKET ClientSocket = INVALID_SOCKET;
 
     struct addrinfo *result = NULL;
@@ -97,19 +185,40 @@ int send_modem(wchar_t *sendbuf, int size)
         WSACleanup();
         return 1;
     }
-    printf("Connection accepted\n");
+    printf("Connection accepted\n");*/
     
+    cout<<"Opening data.txt"<<endl;
+    f = fopen("data.txt", "wb");
+    fwrite(sendbuf, size, 1, f);
+    fclose(f);
+
+	system("openssl enc -aes-256-cbc -in data.txt -out chrxbuf.txt -pass pass:\"helloamar\"");
+
+	char *encbuff = new char[2048];
+
+	f = fopen("chrxbuf.txt", "rb");
+    fseek(f, 0, SEEK_END);
+    fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);   
+    fread(encbuff, fsize, 1, f);
+    fclose(f);        
+    
+	/*
         // Send an initial buffer
     char *chsendbuf = new char[2048], *encbuff = new char[2048];
-/*    char *sslparam[] = {"aes-256-cbc", " -d", " -a", " -in", " chsendbuf",  
-                      "-out", " chrxbuf.txt", " -pass", " pass: \"hello amar\""};*/
+    char *sslparam[] = {"aes-256-cbc", " -d", " -a", " -in", " chsendbuf",  
+                      "-out", " chrxbuf.txt", " -pass", " pass: \"hello amar\""};
     wcstombs(chsendbuf, sendbuf, size);
-    
+    */
+
     //execve("openssl", sslparam, NULL);
     
-    iResult = send(ClientSocket, chsendbuf, size, 0 );
+    cout<<"Encoded data being sent to Modem; "<<encbuff<<endl;
+
+    iResult = send(ClientSocket, encbuff, fsize, 0 );
     if (iResult == SOCKET_ERROR) {
         printf("send failed with error: %d\n", WSAGetLastError());
+		cout<<"send failed with error:"<< WSAGetLastError()<<endl;
         closesocket(ClientSocket);
         WSACleanup();
         return 1;
@@ -117,10 +226,9 @@ int send_modem(wchar_t *sendbuf, int size)
 
     cout<<"Bytes Sent: %ld\n"<<iResult;
 
-    
+    return 0;
     // No longer need server socket
-    closesocket(ListenSocket);
-
+    //closesocket(ListenSocket);
 }
  
 /*
@@ -129,6 +237,7 @@ int pipe_close_host()
     CloseHandle(pipe_local);
 }
 */
+
 void * pipe_client_recv(void *id)
 {
 	HANDLE pipe_to_gui;
@@ -154,8 +263,9 @@ void * pipe_client_recv(void *id)
             system("pause");
             return NULL;
         }
- Sleep(10);
- while (1) {
+ 
+    
+    while (1) {
     // The read operation will block until there is data to read
     //wchar_t buffer[128];
 	char buffer[128];
@@ -181,43 +291,17 @@ void * pipe_client_recv(void *id)
 
 		//host_get_pipe_handle(&pipe_to_gui);
         //host_write_to_pipe(0, buffer, pipe_to_gui);
-		host_write_to_pipe(0, buffer);
-		system("pause");
-        //send_modem(buffer, size);
+//		host_write_to_pipe(0, buffer);
+		cout<<"Commenting out ue_send_modem"<<endl;
+        ue_send_modem(buffer, size);
     } else {
             wcout << "Failed to read data from the pipe." << endl;
     }
  }
+    system("pause");  
 }
 
-/*
-int pipe_create_bw_thread()
-{
-    cout<<"Connecting to pipe...\n" ;
-        
-    WaitNamedPipe(L"\\\\.\\pipe\\yodha_thd", 0xffffffff);
- 
-    pipe = CreateFile(
-            L"\\\\.\\pipe\\yodha_thd",
-            GENERIC_READ, // only need read access
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL
-        );
-     
-    if (pipe == INVALID_HANDLE_VALUE) {
-            cout << "Failed to connect to pipe.\n";
-            // look up error code here using GetLastError()
-            system("pause");
-            return 1;
-        }
-     
-    return 0;
-}
 
-*/
 //int main(int argc, const char **argv)
 int pipe_create_host()
 {   

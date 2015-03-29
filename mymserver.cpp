@@ -6,7 +6,7 @@
 using namespace std;
  
 HANDLE pipe;
-//int main(int argc, const char **argv)
+
 
 //int host_write_to_pipe(int msg_id, char *data, HANDLE pipe)
 int host_write_to_pipe(int msg_id, char *data)
